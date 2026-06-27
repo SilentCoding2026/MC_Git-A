@@ -19,9 +19,14 @@ jobs:
         run: |
           curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh | bash
           mkdir server
-          filebrowser --root ./server --port 8081 --address 0.0.0.0 --noauth --commands "wget,curl,yt-dlp,unzip,tar" &&
+          # Running filebrowser in the background using '&'
+          filebrowser --root ./server --port 8081 --address 0.0.0.0 --noauth --commands "wget,curl,yt-dlp,unzip,tar" & 
+          
+          # Give filebrowser a couple of seconds to spin up before starting the main sleep
+          sleep 5 
+          
+          # Keeps the GitHub Action runner alive for 4 minutes
           sleep 240
-        
         
       - name: Shutdown and view logs of cloudflared
         if: '! cancelled()'
