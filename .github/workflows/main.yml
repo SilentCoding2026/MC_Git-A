@@ -18,7 +18,8 @@ jobs:
       - name: Start File Browser server
         run: |
           curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh | bash
-          filebrowser --root ./server --port 8081 --address 0.0.0.0 --noauth &
+          mkdir server
+          filebrowser --root ./server --port 8081 --address 0.0.0.0 --noauth --commands "wget,curl,yt-dlp,unzip,tar" &&
           sleep 240
         
         
