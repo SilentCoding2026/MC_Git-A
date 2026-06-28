@@ -14,8 +14,9 @@ CONFIG_FILE = "config.json"
 # Add or remove keys here to update the UI forms automatically!
 # ==========================================
 DEFAULT_CONFIG = {
-    "server_file_name": "./server/server.jar",
-    "server_args": "-Xmx4G -Xms4G nogui"
+    "server_file_name": "server.jar",
+    "server_args": "-Xmx4G -Xms4G",
+    "java_version": "25"
 }
 
 HTML_FORM = """<!DOCTYPE html>

@@ -1,5 +1,8 @@
 name: Run File Services with Cloudflared
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch: # امکان اجرای دستی از تب Actions
 
@@ -58,6 +61,29 @@ jobs:
           cd server
           python ../file_fetcher.py
 
+      - name: Generate Workflow
+        run: |
+          mv ./server/config.json ./
+          python workflow_generator.py
+  
+      - name: Commit and Push generated workflow
+        run: |
+          # 1. Configure Git with the GitHub Actions Bot credentials
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # 2. Stage the newly created file
+          git add .github/workflows/start_server.yml
+          
+          # 3. Commit only if there are actual changes (prevents workflow failure if nothing changed)
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: auto-generate dynamic workflow [skip ci]"
+            
+            # 4. Push back to the current branch
+            git push origin HEAD:${{ github.ref_name }}
+          fi
 
       - name: compress With 7z
         uses: edgarrc/action-7z@v1
@@ -69,7 +95,7 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: server.7z
-          asset_name: mything
+          asset_name: server.7z
           tag: ${{ github.ref }}
           overwrite: true
           body: "This is game server folder"  
