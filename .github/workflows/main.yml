@@ -1,13 +1,12 @@
-permissions:
-  contents: write
-  workflows: write   # <--- Add this line
-
-
 name: Run File Services with Cloudflared
 
 on:
   workflow_dispatch: # امکان اجرای دستی از تب Actions
 
+permissions:
+  contents: write
+  workflows: write
+  
 jobs:
   run-builder:
     runs-on: ubuntu-latest
