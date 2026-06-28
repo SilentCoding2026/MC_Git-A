@@ -2,6 +2,7 @@ name: Run File Services with Cloudflared
 
 permissions:
   contents: write
+  workflows: write   # <--- Add this line
 
 on:
   workflow_dispatch: # امکان اجرای دستی از تب Actions
