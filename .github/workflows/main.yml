@@ -56,7 +56,7 @@ jobs:
       - name: Run File Fetcher Server
         run: |
           cd server
-          python file_fetcher.py
+          python ../file_fetcher.py
 
 
       - name: compress With 7z
