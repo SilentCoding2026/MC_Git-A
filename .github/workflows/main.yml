@@ -27,7 +27,6 @@ jobs:
         uses: AnimMouse/setup-cloudflared/tunnel@v2
         with:
           url: http://localhost:8081
-        run: sleep 5
           
       # ۵. ساخت تونل برای اسکریپت پایتون یا سرویس دوم (پورت 8082)
       - name: Setup cloudflared tunnel for Python Service
