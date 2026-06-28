@@ -5,7 +5,7 @@ import urllib.request
 import os
 import threading
 
-PORT = 8080
+PORT = 8082
 
 HTML_FORM = """<!DOCTYPE html>
 <html>
