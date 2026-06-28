@@ -68,7 +68,7 @@ jobs:
       - name: Start Server
         run: |
           cd server
-          python ../server_control.py 9000 java -Xmx4G -Xms4G -jar server.jar nogui
+          python ../server_control.py 9000 14400 java -Xmx4G -Xms4G -jar server.jar nogui
 
       - name: Delete Previous release
         uses: liudonghua123/delete-release-action@v1

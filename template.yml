@@ -31,7 +31,7 @@ jobs:
 
           sleep 10
 
-          cat cloudflare.log
+          cat cloudflarea.log
 
       - name: Start Cloudflared for FileBrowser server
         run: |
@@ -39,7 +39,7 @@ jobs:
 
           sleep 10
 
-          cat cloudflare.log
+          cat cloudflareb.log
 
       - name: Start Cloudflared for Minecraft server controller
         run: |
@@ -47,7 +47,7 @@ jobs:
 
           sleep 15
 
-          cat cloudflare.log
+          cat cloudflarec.log
 
       - name: Start File Browser server
         run: |
@@ -68,7 +68,7 @@ jobs:
       - name: Start Server
         run: |
           cd server
-          python ../server_control.py 9000 java __JAVA_ARGS__ -jar __SERVER_JAR_NAME__ nogui
+          python ../server_control.py 9000 14400 java __JAVA_ARGS__ -jar __SERVER_JAR_NAME__ nogui
 
       - name: Delete Previous release
         uses: liudonghua123/delete-release-action@v1
