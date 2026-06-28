@@ -21,7 +21,7 @@ for placeholder, real_value in replacements.items():
     content = content.replace(placeholder, real_value)
 
 # 4. Save the final workflow file
-with open('.github/workflows/start_server.yml', 'w') as file:
+with open('start_server.yml', 'w') as file:
     file.write(content)
 
 print("All 3 variables injected and workflow generated!")

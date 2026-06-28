@@ -6,7 +6,7 @@ on:
 permissions:
   contents: write
   workflows: write
-  
+
 jobs:
   run-builder:
     runs-on: ubuntu-latest
@@ -74,7 +74,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           
           # 2. Stage the newly created file
-          git add .github/workflows/start_server.yml
+          git add start_server.yml
           
           # 3. Commit only if there are actual changes (prevents workflow failure if nothing changed)
           if git diff --staged --quiet; then
