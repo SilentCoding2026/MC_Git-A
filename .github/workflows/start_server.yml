@@ -31,7 +31,7 @@ jobs:
 
           sleep 10
 
-          cat cloudflare.log
+          cat cloudflarea.log
 
       - name: Start Cloudflared for FileBrowser server
         run: |
@@ -39,7 +39,7 @@ jobs:
 
           sleep 10
 
-          cat cloudflare.log
+          cat cloudflareb.log
 
       - name: Start Cloudflared for Minecraft server controller
         run: |
@@ -47,7 +47,7 @@ jobs:
 
           sleep 15
 
-          cat cloudflare.log
+          cat cloudflarec.log
 
       - name: Start File Browser server
         run: |
