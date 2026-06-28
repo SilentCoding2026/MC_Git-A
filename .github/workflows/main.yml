@@ -44,7 +44,7 @@ jobs:
           filebrowser --root ./server --port 8081 --address 0.0.0.0 --noauth > filebrowser.log 2>&1 &
           # کمی صبر برای لود شدن کامل سرویس
           sleep 3
-
+      - name: create Eula = True
       - uses: 1arp/create-a-file-action@0.4.6
         with:
           path: 'server'
