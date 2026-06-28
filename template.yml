@@ -86,7 +86,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: server.7z
           asset_name: mything
-          tag: ${{ github.ref }}
+          tag: build-${{ github.run_number }}
           overwrite: true
           body: "This is game server folder"  
         
