@@ -59,7 +59,7 @@ jobs:
           python file_fetcher.py
 
 
-
+      - name: compress With 7z
       - uses: edgarrc/action-7z@v1
         with:
           args: 7z a server.7z server/
