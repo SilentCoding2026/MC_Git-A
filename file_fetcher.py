@@ -7,16 +7,26 @@ import threading
 import json
 
 PORT = 8082
+CONFIG_FILE = "config.json"
+
+# ==========================================
+# EASY TO EDIT CONFIGURATION FIELDS
+# Add or remove keys here to update the UI forms automatically!
+# ==========================================
+DEFAULT_CONFIG = {
+    "server_file_name": "./server/server.jar",
+    "server_args": "-Xmx4G -Xms4G nogui"
+}
 
 HTML_FORM = """<!DOCTYPE html>
 <html>
 <head>
-    <title>VPS Remote Downloader</title>
+    <title>VPS Remote Control Panel</title>
     <style>
-        body {{ font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; line-height: 1.6; background-color: #f9f9f9; color: #333; }}
-        .card {{ background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 25px; }}
+        body {{ font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; line-height: 1.6; background-color: #f4f6f9; color: #333; }}
+        .card {{ background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 25px; border: 1px solid #e1e4e8; }}
         .form-group {{ margin-bottom: 15px; }}
-        label {{ display: block; font-weight: bold; margin-bottom: 5px; }}
+        label {{ display: block; font-weight: bold; margin-bottom: 5px; color: #444; }}
         input[type="text"], textarea {{ width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; }}
         textarea {{ resize: vertical; }}
         .btn {{ color: white; padding: 10px 20px; border: none; cursor: pointer; font-size: 16px; text-decoration: none; display: inline-block; border-radius: 4px; font-weight: bold; }}
@@ -29,20 +39,25 @@ HTML_FORM = """<!DOCTYPE html>
         .message {{ padding: 15px; margin-bottom: 20px; border-radius: 4px; white-space: pre-line; font-family: monospace; }}
         .success {{ background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }}
         .error {{ background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }}
-        .actions {{ margin-top: 20px; display: flex; gap: 10px; justify-content: space-between; }}
-        .flex-group {{ display: flex; gap: 10px; }}
-        hr {{ border: 0; height: 1px; background: #eee; margin: 25px 0; }}
+        .actions {{ margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; }}
     </style>
 </head>
 <body>
-    <h2>VPS Remote Downloader</h2>
-    <p>Fetch files directly to your VPS environment seamlessly.</p>
+    <h2>VPS Remote Control Panel</h2>
+    <p>Manage file transfers and operational configurations directly on your VPS container.</p>
     
     {message}
 
-    <div class="card">
-        <h3>Single File Download</h3>
-        <form method="POST" action="/single">
+    <form method="POST" action="/submit_panel">
+        
+        <div class="card" style="border-left: 5px solid #dc3545;">
+            <h3 style="margin-top:0; color: #dc3545;">1. Server Instance Configuration</h3>
+            <p style="font-size: 0.9em; color: #666;">These parameters will save to <code>{config_file}</code> upon server shutdown.</p>
+            {config_fields_html}
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top:0;">2. Single File Download</h3>
             <div class="form-group">
                 <label for="url">File URL:</label>
                 <input type="text" id="url" name="url" placeholder="https://example.com/file.zip">
@@ -55,68 +70,108 @@ HTML_FORM = """<!DOCTYPE html>
                 <label for="dir">Save Directory:</label>
                 <input type="text" id="dir" name="dir" placeholder="./downloads">
             </div>
-            <button type="submit" class="btn btn-primary">Start Download</button>
-        </form>
-    </div>
+        </div>
 
-    <div class="card">
-        <h3>Batch JSON Download</h3>
-        <form method="POST" action="/batch">
+        <div class="card">
+            <h3 style="margin-top:0;">3. Batch JSON Download</h3>
             <div class="form-group">
                 <label for="json_data">Paste JSON Array:</label>
-                <textarea id="json_data" name="json_data" rows="8" placeholder='[\n  {{\n    "url": "https://example.com/file1.zip",\n    "name": "file1.zip",\n    "save_dir": "./downloads"\n  }}\n]'></textarea>
+                <textarea id="json_data" name="json_data" rows="6" placeholder='[\n  {{\n    "url": "https://example.com/file1.zip",\n    "name": "file1.zip",\n    "save_dir": "./downloads"\n  }}\n]'></textarea>
             </div>
-            <button type="submit" class="btn btn-success">Download All Files</button>
-        </form>
-    </div>
+        </div>
 
-    <div class="actions">
-        <span></span> <a href="/shutdown" class="btn btn-danger" onclick="return confirm('Are you sure you want to stop the server? This will unblock your workflow pipeline.');">Stop Server & Exit</a>
-    </div>
+        <div class="card" style="background: #fdfdfd; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <button type="submit" name="action" value="download_single" class="btn btn-primary">Download Single</button>
+                <button type="submit" name="action" value="download_batch" class="btn btn-success">Run Batch Job</button>
+            </div>
+            <button type="submit" name="action" value="shutdown" class="btn btn-danger" onclick="return confirm('Are you sure you want to save parameters and terminate the server session?');">Stop Server & Save Config</button>
+        </div>
+    </form>
 </body>
 </html>
 """
 
 def download_file(url, name, save_dir):
-    """Helper to process individual file downloads."""
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    
     full_path = os.path.join(save_dir, name)
-    req = urllib.request.Request(
-        url, 
-        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-    )
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
     with urllib.request.urlopen(req) as response, open(full_path, 'wb') as out_file:
         out_file.write(response.read())
     return full_path
 
-class DownloadHandler(http.server.BaseHTTPRequestHandler):
-    def do_GET(self):
-        if self.path == '/shutdown':
-            self.send_response(200)
-            self.send_header("Content-type", "text/html")
-            self.end_headers()
-            shutdown_html = "<html><body><h2>Server Stopping...</h2><p>Process terminated. CI/CD workflow unblocked.</p></body></html>"
-            self.wfile.write(shutdown_html.encode('utf-8'))
-            print("\nShutdown request received. Stopping server...")
-            threading.Thread(target=self.server.shutdown).start()
-            return
+def load_saved_config():
+    """Loads settings from config.json if it exists, otherwise defaults."""
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r') as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return DEFAULT_CONFIG.copy()
 
+def build_config_html(current_config):
+    """Generates form inputs dynamically based on the configuration keys."""
+    html = ""
+    for key, value in current_config.items():
+        label_text = key.replace("_", " ").title()
+        html += f"""
+        <div class="form-group">
+            <label for="cfg_{key}">{label_text}:</label>
+            <input type="text" id="cfg_{key}" name="cfg_{key}" value="{value}">
+        </div>"""
+    return html
+
+class ControlPanelHandler(http.server.BaseHTTPRequestHandler):
+    def render_panel(self, message_html=""):
+        current_config = load_saved_config()
+        fields_html = build_config_html(current_config)
+        
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
-        self.wfile.write(HTML_FORM.format(message="").encode('utf-8'))
+        
+        response_content = HTML_FORM.format(
+            message=message_html, 
+            config_file=CONFIG_FILE, 
+            config_fields_html=fields_html
+        )
+        self.wfile.write(response_content.encode('utf-8'))
+
+    def do_GET(self):
+        self.render_panel()
 
     def do_POST(self):
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length).decode('utf-8')
         fields = urllib.parse.parse_qs(post_data)
         
+        action = fields.get('action', [''])[0]
         message_html = ""
         
-        # Route 1: Single File download handling
-        if self.path == '/single':
+        # 1. Extract and sync current config values from the UI
+        updated_config = {}
+        for key in DEFAULT_CONFIG.keys():
+            updated_config[key] = fields.get(f'cfg_{key}', [''])[0].strip()
+
+        # 2. Handle specific execution buttons
+        if action == "shutdown":
+            try:
+                with open(CONFIG_FILE, 'w') as f:
+                    json.dump(updated_config, f, indent=4)
+                print(f"\nConfiguration successfully updated and dumped to {CONFIG_FILE}")
+            except Exception as e:
+                print(f"Error writing configuration backup file: {str(e)}")
+                
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            self.wfile.write(f"<html><body><h2>System Offline</h2><p>Saved parameters to <code>{CONFIG_FILE}</code>. Workflow run released.</p></body></html>".encode('utf-8'))
+            threading.Thread(target=self.server.shutdown).start()
+            return
+
+        elif action == "download_single":
             url = fields.get('url', [''])[0].strip()
             name = fields.get('name', [''])[0].strip()
             save_dir = fields.get('dir', [''])[0].strip()
@@ -126,58 +181,48 @@ class DownloadHandler(http.server.BaseHTTPRequestHandler):
                     path = download_file(url, name, save_dir)
                     message_html = f'<div class="message success">Successfully downloaded:\n{path}</div>'
                 except Exception as e:
-                    message_html = f'<div class="message error">Error downloading file:\n{str(e)}</div>'
+                    message_html = f'<div class="message error">Single Download Error:\n{str(e)}</div>'
             else:
-                message_html = '<div class="message error">All single fields are required.</div>'
-                
-        # Route 2: Batch JSON handling
-        elif self.path == '/batch':
+                message_html = '<div class="message error">Error: Single file fields are incomplete.</div>'
+
+        elif action == "download_batch":
             json_str = fields.get('json_data', [''])[0].strip()
             if json_str:
                 try:
                     tasks = json.loads(json_str)
-                    if not isinstance(tasks, list):
-                        raise ValueError("JSON input must be a root list/array containing file items.")
-                    
                     results = []
                     success_count = 0
-                    
                     for i, item in enumerate(tasks):
-                        b_url = item.get('url', '').strip()
-                        b_name = item.get('name', '').strip()
-                        b_dir = item.get('save_dir', '').strip()
-                        
-                        if b_url and b_name and b_dir:
+                        if 'url' in item and 'name' in item and 'save_dir' in item:
                             try:
-                                path = download_file(b_url, b_name, b_dir)
-                                results.append(f"[{i+1}/{len(tasks)}] SUCCESS: {b_name} -> {path}")
+                                path = download_file(item['url'], item['name'], item['save_dir'])
+                                results.append(f"[{i+1}/{len(tasks)}] SUCCESS: {item['name']}")
                                 success_count += 1
-                            except Exception as item_err:
-                                results.append(f"[{i+1}/{len(tasks)}] FAILED: {b_name} | Error: {str(item_err)}")
+                            except Exception as err:
+                                results.append(f"[{i+1}/{len(tasks)}] FAILED: {item['name']} | {str(err)}")
                         else:
-                            results.append(f"[{i+1}/{len(tasks)}] FAILED: Missing required keys (url, name, or save_dir)")
+                            results.append(f"[{i+1}/{len(tasks)}] FAILED: Bad Item Formatting Keys")
                     
-                    summary_log = "\n".join(results)
-                    status_class = "success" if success_count == len(tasks) else "error"
-                    message_html = f'<div class="message {status_class}">Batch Completed ({success_count}/{len(tasks)} items downloaded):\n\n{summary_log}</div>'
-                    
-                except json.JSONDecodeError as je:
-                    message_html = f'<div class="message error">Invalid JSON formatting syntax:\n{str(je)}</div>'
+                    status_cls = "success" if success_count == len(tasks) else "error"
+                    message_html = f'<div class="message {status_cls}">Batch Job Result ({success_count}/{len(tasks)}):\n' + "\n".join(results) + '</div>'
                 except Exception as e:
-                    message_html = f'<div class="message error">Batch processing failed:\n{str(e)}</div>'
+                    message_html = f'<div class="message error">JSON Processing Failure:\n{str(e)}</div>'
             else:
-                message_html = '<div class="message error">Please provide JSON configuration details.</div>'
+                message_html = '<div class="message error">Error: JSON text box is empty.</div>'
 
-        # Render original UI with status report block
-        self.send_response(200)
-        self.send_header("Content-type", "text/html")
-        self.end_headers()
-        self.wfile.write(HTML_FORM.format(message=message_html).encode('utf-8'))
+        # Always save configuration changes to config.json even when running a download to persist state
+        try:
+            with open(CONFIG_FILE, 'w') as f:
+                json.dump(updated_config, f, indent=4)
+        except Exception:
+            pass
+
+        self.render_panel(message_html)
 
 if __name__ == "__main__":
     socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("0.0.0.0", PORT), DownloadHandler) as httpd:
-        print(f"Server up and running on port {PORT}...")
+    with socketserver.TCPServer(("0.0.0.0", PORT), ControlPanelHandler) as httpd:
+        print(f"Control panel active on port {PORT}...")
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
