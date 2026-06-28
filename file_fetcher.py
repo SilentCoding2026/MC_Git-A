@@ -3,24 +3,24 @@ import socketserver
 import urllib.parse
 import urllib.request
 import os
-import cgi
 
 PORT = 8082
 
+# Note the doubled curly braces {{ }} around the CSS styles so .format() ignores them
 HTML_FORM = """<!DOCTYPE html>
 <html>
 <head>
     <title>VPS Remote Downloader</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.6; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; }
-        input[type="text"] { width: 100%; padding: 8px; box-sizing: border-box; }
-        button { background-color: #007BFF; color: white; padding: 10px 15px; border: none; cursor: pointer; font-size: 16px; }
-        button:hover { background-color: #0056b3; }
-        .message { padding: 10px; margin-top: 20px; border-radius: 4px; }
-        .success { background-color: #d4edda; color: #155724; }
-        .error { background-color: #f8d7da; color: #721c24; }
+        body {{ font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.6; }}
+        .form-group {{ margin-bottom: 15px; }}
+        label {{ display: block; font-weight: bold; margin-bottom: 5px; }}
+        input[type="text"] {{ width: 100%; padding: 8px; box-sizing: border-box; }}
+        button {{ background-color: #007BFF; color: white; padding: 10px 15px; border: none; cursor: pointer; font-size: 16px; }}
+        button:hover {{ background-color: #0056b3; }}
+        .message {{ padding: 10px; margin-top: 20px; border-radius: 4px; }}
+        .success {{ background-color: #d4edda; color: #155724; }}
+        .error {{ background-color: #f8d7da; color: #721c24; }}
     </style>
 </head>
 <body>
@@ -79,7 +79,6 @@ class DownloadHandler(http.server.BaseHTTPRequestHandler):
                 full_path = os.path.join(save_dir, name)
                 
                 # Download the file directly via VPS internet connection
-                # Using a User-Agent to prevent basic bot blocks from some websites
                 req = urllib.request.Request(
                     url, 
                     headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
@@ -101,10 +100,8 @@ class DownloadHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(HTML_FORM.format(message=message_html).encode('utf-8'))
 
 if __name__ == "__main__":
-    # Binding to 0.0.0.0 allows external access to the VPS ip
     with socketserver.TCPServer(("0.0.0.0", PORT), DownloadHandler) as httpd:
         print(f"Server running on port {PORT}...")
-        print(f"Access it via http://YOUR_VPS_IP:{PORT}")
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
