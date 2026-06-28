@@ -34,6 +34,7 @@ jobs:
         with:
           url: http://localhost:8082
 
+
       # ۶. نصب و اجرای File Browser در پس‌زمینه
       - name: Start File Browser server
         run: |
@@ -44,12 +45,34 @@ jobs:
           # کمی صبر برای لود شدن کامل سرویس
           sleep 3
 
+      - uses: 1arp/create-a-file-action@0.4.6
+        with:
+          path: 'server'
+          isAbsolutePath: false
+          file: 'eula.txt'
+          content: eula=TRUE
+
       # ۷. اجرای فایل پایتون موجود در ریپو
       - name: Run File Fetcher Server
-        run: python file_fetcher.py
+        run: |
+          cd server
+          python file_fetcher.py
 
-      - name: Wait ...
-        run: sleep 240
+
+
+      - uses: edgarrc/action-7z@v1
+        with:
+          args: 7z a server.7z server/
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: server.7z
+          asset_name: mything
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "This is game server folder
         
       # ۸. خاموش کردن تونل‌ها و نمایش لاگ‌ها در پایان کار (حتی در صورت خطا)
       - name: Shutdown and view logs of cloudflared
